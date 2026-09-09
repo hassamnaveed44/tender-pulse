@@ -16,6 +16,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
   const content = (
     <html lang="en" className="h-full bg-background">
       <head>
@@ -32,8 +34,8 @@ export default function RootLayout({
     </html>
   );
 
-  if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-    return <ClerkProvider>{content}</ClerkProvider>;
+  if (publishableKey) {
+    return <ClerkProvider publishableKey={publishableKey}>{content}</ClerkProvider>;
   }
 
   return content;
