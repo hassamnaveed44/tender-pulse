@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { UploadCloud, FileText, CheckCircle2, AlertCircle, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { uploadRfpDocumentAction } from "../actions/tenderActions";
 
 interface RfpUploadDropzoneProps {
   tenderId?: string;
@@ -45,30 +46,38 @@ export function RfpUploadDropzone({ tenderId, onUploadSuccess }: RfpUploadDropzo
     }
   }
 
-  function simulateUpload() {
+  async function handleUploadAndParse() {
     if (!file) return;
 
     setIsUploading(true);
-    setUploadProgress(0);
+    setUploadProgress(30);
 
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          setIsSuccess(true);
-          if (onUploadSuccess) onUploadSuccess(file.name);
+    try {
+      const formData = new FormData();
+      formData.append("tenderId", tenderId || "");
+      formData.append("file", file);
 
-          // Route to extraction review stage (Screen 6)
-          setTimeout(() => {
-            router.push(`/tenders/${tenderId || "tender-1"}/review`);
-          }, 800);
+      setUploadProgress(60);
+      const res = await uploadRfpDocumentAction(formData);
 
-          return 100;
-        }
-        return prev + 25;
-      });
-    }, 250);
+      setUploadProgress(100);
+      setIsUploading(false);
+
+      if (res.success) {
+        setIsSuccess(true);
+        if (onUploadSuccess) onUploadSuccess(file.name);
+        setTimeout(() => {
+          router.push(`/tenders/${tenderId}/review`);
+          router.refresh();
+        }, 600);
+      } else {
+        alert(res.error || "Failed to parse RFP PDF.");
+      }
+    } catch (err: any) {
+      console.error("Error during RFP PDF parse upload:", err);
+      setIsUploading(false);
+      alert(err.message || "An unexpected error occurred during RFP upload.");
+    }
   }
 
   return (
@@ -220,7 +229,7 @@ export function RfpUploadDropzone({ tenderId, onUploadSuccess }: RfpUploadDropzo
           size="sm"
           disabled={!file || isUploading}
           isLoading={isUploading}
-          onClick={simulateUpload}
+          onClick={handleUploadAndParse}
           leftIcon={isSuccess ? <CheckCircle2 className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
         >
           {isSuccess ? "Uploaded! Redirecting to Review..." : "Upload & Run AI Extraction"}
