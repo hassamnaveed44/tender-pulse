@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* TenderPulse Brand Design System Variables */
+  --background: #F7F8F6;
+  --surface: #FFFFFF;
+  --surface-alt: #F0F2F1;
+  
+  --text-primary: #17212B;
+  --text-secondary: #66727D;
+  --text-muted: #8E9AA5;
+
+  --border: #DCE1E3;
+  --border-subtle: #E8ECEE;
+
+  --primary: #173B4D;
+  --primary-hover: #122F3E;
+  --primary-foreground: #FFFFFF;
+
+  --accent: #2F7F7A;
+  --accent-light: #EBF5F4;
+  --accent-foreground: #FFFFFF;
+
+  --status-verified: #2F7F7A;
+  --status-verified-bg: #E8F4F3;
+  
+  --status-inreview: #A56A20;
+  --status-inreview-bg: #FDF4E7;
+
+  --status-missing: #B44848;
+  --status-missing-bg: #FCEEEE;
+
+  --status-notstarted: #66727D;
+  --status-notstarted-bg: #F0F2F4;
+
+  --success: #39735A;
+  --warning: #A56A20;
+  --danger: #B44848;
+  --info: #426A8A;
+  --info-bg: #EEF4F9;
+
+  --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-jetbrains-mono: 'JetBrains Mono', monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  
+  body {
+    background-color: var(--background);
+    color: var(--text-primary);
+    font-family: var(--font-inter);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* JetBrains Mono helper */
+  .font-mono {
+    font-family: var(--font-jetbrains-mono);
+  }
+
+  /* 2px focus ring for accessibility */
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+}
+
+/* Custom subtle scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #DCE1E3;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #B9C2C7;
+}
+
+/* Utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+}
+
+.matrix-row-hover:hover {
+  background-color: #FAFBFA;
+}

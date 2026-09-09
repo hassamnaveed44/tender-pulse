@@ -1,0 +1,227 @@
+// TenderPulse Prisma Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  clerkUserId  String   @unique
+  email        String   @unique
+  fullName     String
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+
+  // Relations
+  organizationsCreated Organization[]          @relation("OrgCreator")
+  memberships          OrganizationMember[]
+  membersInvited       OrganizationMember[]    @relation("InvitedMembers")
+  tendersCreated       Tender[]                @relation("TenderCreator")
+  tenderDocsUploaded   TenderDocument[]        @relation("TenderDocUploader")
+  evidenceDocsUploaded Document[]              @relation("DocumentUploader")
+  assignmentsReceived  RequirementAssignment[] @relation("AssignedUser")
+  assignmentsGiven     RequirementAssignment[] @relation("AssignedByUser")
+  evidenceAttached     RequirementEvidence[]   @relation("AttachedByUser")
+  notifications        Notification[]
+  auditLogs            AuditLog[]              @relation("ActorLogs")
+
+  @@map("users")
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdBy String
+  createdAt DateTime @default(now())
+
+  // Relations
+  creator   User                 @relation("OrgCreator", fields: [createdBy], references: [id])
+  members   OrganizationMember[]
+  tenders   Tender[]
+  documents Document[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String   @id @default(uuid())
+  organizationId String
+  userId         String
+  role           String   @default("MEMBER") // ADMIN or MEMBER
+  invitedBy      String?
+  isActive       Boolean  @default(true)
+  joinedAt       DateTime @default(now())
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inviter      User?        @relation("InvitedMembers", fields: [invitedBy], references: [id])
+
+  @@unique([organizationId, userId])
+  @@map("organization_members")
+}
+
+model Tender {
+  id                 String   @id @default(uuid())
+  organizationId     String
+  title              String
+  clientName         String?
+  referenceNumber    String   @unique
+  status             String   @default("DRAFT") // DRAFT, EXTRACTING, IN_REVIEW, ACTIVE, SUBMITTED, CLOSED
+  submissionDeadline DateTime
+  createdBy          String
+  createdAt          DateTime @default(now())
+
+  // Relations
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creator               User                   @relation("TenderCreator", fields: [createdBy], references: [id])
+  tenderDocuments       TenderDocument[]
+  extractedRequirements ExtractedRequirement[]
+  requirements          Requirement[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+
+  @@map("tenders")
+}
+
+model TenderDocument {
+  id         String   @id @default(uuid())
+  tenderId   String
+  fileType   String   @default("RFP") // RFP, ADDENDUM, CLARIFICATION
+  storageKey String
+  fileName   String
+  uploadedBy String
+  uploadedAt DateTime @default(now())
+
+  // Relations
+  tender                Tender                 @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  uploader              User                   @relation("TenderDocUploader", fields: [uploadedBy], references: [id])
+  extractedRequirements ExtractedRequirement[]
+
+  @@map("tender_documents")
+}
+
+model ExtractedRequirement {
+  id               String   @id @default(uuid())
+  tenderId         String
+  sourceDocumentId String?
+  sourcePage       Int?
+  rawPayload       String   // JSON string containing title, description, category, mandatory, confidence
+  status           String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  createdAt        DateTime @default(now())
+
+  // Relations
+  tender         Tender          @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  sourceDocument TenderDocument? @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  requirements   Requirement[]
+
+  @@map("extracted_requirements")
+}
+
+model Requirement {
+  id                 String   @id @default(uuid())
+  tenderId           String
+  title              String
+  description        String?
+  category           String?  // e.g. Eligibility, Technical, Financial, Legal
+  isMandatory        Boolean  @default(true)
+  status             String   @default("NOT_STARTED") // NOT_STARTED, IN_REVIEW, VERIFIED, MISSING
+  source             String   @default("EXTRACTED") // EXTRACTED, MANUAL
+  sourceExtractionId String?
+  sourcePage         Int?
+  createdAt          DateTime @default(now())
+
+  // Relations
+  tender            Tender                  @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  sourceExtraction  ExtractedRequirement?   @relation(fields: [sourceExtractionId], references: [id], onDelete: SetNull)
+  assignments       RequirementAssignment[]
+  evidenceLinks     RequirementEvidence[]
+
+  @@map("requirements")
+}
+
+model RequirementAssignment {
+  id            String   @id @default(uuid())
+  requirementId String
+  userId        String
+  assignedBy    String
+  assignedAt    DateTime @default(now())
+
+  // Relations
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  user        User        @relation("AssignedUser", fields: [userId], references: [id])
+  assigner    User        @relation("AssignedByUser", fields: [assignedBy], references: [id])
+
+  @@map("requirement_assignments")
+}
+
+model Document {
+  id             String    @id @default(uuid())
+  organizationId String
+  fileName       String
+  storageKey     String
+  fileType       String?   // Certificate, Financial Statement, Policy, etc.
+  expiryDate     DateTime?
+  uploadedBy     String
+  createdAt      DateTime  @default(now())
+
+  // Relations
+  organization  Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  uploader      User                  @relation("DocumentUploader", fields: [uploadedBy], references: [id])
+  evidenceLinks RequirementEvidence[]
+
+  @@map("documents")
+}
+
+model RequirementEvidence {
+  id            String   @id @default(uuid())
+  requirementId String
+  documentId    String
+  attachedBy    String
+  attachedAt    DateTime @default(now())
+
+  // Relations
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  document    Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  attacher    User        @relation("AttachedByUser", fields: [attachedBy], references: [id])
+
+  @@unique([requirementId, documentId])
+  @@map("requirement_evidence")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  tenderId  String?
+  type      String   // ASSIGNMENT, DEADLINE_APPROACHING, DOCUMENT_EXPIRING, VERIFIED, EXTRACTION_COMPLETE
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relations
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tender Tender? @relation(fields: [tenderId], references: [id], onDelete: SetNull)
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String
+  tenderId  String?
+  type      String   // REQUIREMENT_ACCEPTED, EVIDENCE_ATTACHED, REQUIREMENT_VERIFIED, TENDER_SUBMITTED, etc.
+  payload   String?  // JSON string
+  createdAt DateTime @default(now())
+
+  // Relations
+  actor  User    @relation("ActorLogs", fields: [actorId], references: [id], onDelete: Cascade)
+  tender Tender? @relation(fields: [tenderId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
