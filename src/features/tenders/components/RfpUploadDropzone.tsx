@@ -196,7 +196,7 @@ export function RfpUploadDropzone({ tenderId, onUploadSuccess }: RfpUploadDropzo
             3. Human Review Gate
           </span>
           <p className="text-[11px] text-text-secondary">
-            Audit extracted clauses in Screen 6 before committing to compliance matrix.
+            Audit extracted clauses in the review stage before committing to compliance matrix.
           </p>
         </div>
       </div>

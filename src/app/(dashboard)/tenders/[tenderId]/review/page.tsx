@@ -38,7 +38,7 @@ export default async function ExtractionReviewPage({ params }: ReviewPageProps) 
                 {tender.referenceNumber}
               </span>
               <span className="text-xs font-semibold bg-[#FDF4E7] text-[#A56A20] px-2 py-0.5 rounded font-mono">
-                Screen 6: Extraction Review Gate
+                AI Extraction Audit Gate
               </span>
             </div>
             <h1 className="text-xl font-bold tracking-tight text-text-primary truncate">
