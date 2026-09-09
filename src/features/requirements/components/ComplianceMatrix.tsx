@@ -21,6 +21,8 @@ import { RequirementItem, AssignedUser } from "../types/requirementTypes";
 import { RequirementDetailDrawer } from "./RequirementDetailDrawer";
 import { assignUserAction, verifyRequirementAction } from "../actions/requirementActions";
 
+import { useRouter } from "next/navigation";
+
 interface ComplianceMatrixProps {
   tenderId: string;
   initialRequirements: RequirementItem[];
@@ -32,6 +34,7 @@ export function ComplianceMatrix({
   initialRequirements,
   teamMembers,
 }: ComplianceMatrixProps) {
+  const router = useRouter();
   const [requirements, setRequirements] = useState<RequirementItem[]>(initialRequirements);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
@@ -52,6 +55,21 @@ export function ComplianceMatrix({
 
     return matchesSearch && matchesCategory && matchesStatus;
   });
+
+  function handleEvidenceAttached(reqId: string, newDoc: any) {
+    setRequirements((prev) =>
+      prev.map((r) =>
+        r.id === reqId
+          ? {
+              ...r,
+              status: "VERIFIED",
+              evidenceDocs: [...r.evidenceDocs, newDoc],
+            }
+          : r
+      )
+    );
+    router.refresh();
+  }
 
   async function handleToggleVerify(req: RequirementItem, e: React.MouseEvent) {
     e.stopPropagation();
@@ -244,6 +262,7 @@ export function ComplianceMatrix({
         onClose={() => setIsDrawerOpen(false)}
         requirement={selectedReq}
         teamMembers={teamMembers}
+        onEvidenceAttached={handleEvidenceAttached}
       />
     </div>
   );

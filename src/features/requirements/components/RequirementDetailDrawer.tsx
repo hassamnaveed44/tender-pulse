@@ -14,6 +14,7 @@ interface RequirementDetailDrawerProps {
   onClose: () => void;
   requirement: RequirementItem | null;
   teamMembers: AssignedUser[];
+  onEvidenceAttached?: (requirementId: string, newDoc: any) => void;
 }
 
 import { uploadDocumentAction, attachEvidenceAction } from "@/features/documents/actions/documentActions";
@@ -23,6 +24,7 @@ export function RequirementDetailDrawer({
   onClose,
   requirement,
   teamMembers,
+  onEvidenceAttached,
 }: RequirementDetailDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -65,7 +67,6 @@ export function RequirementDetailDrawer({
 
       const uploadRes = await uploadDocumentAction(formData);
       if (uploadRes.success) {
-        // Find created document or link directly
         const newDocItem = {
           id: `doc-${Date.now()}`,
           fileName: file.name,
@@ -74,8 +75,12 @@ export function RequirementDetailDrawer({
 
         setLinkedDocs((prev) => [...prev, newDocItem]);
 
-        // Auto verify requirement status when evidence is attached
-        await verifyRequirementAction(requirement!.id);
+        if (requirement) {
+          await verifyRequirementAction(requirement.id);
+          if (onEvidenceAttached) {
+            onEvidenceAttached(requirement.id, newDocItem);
+          }
+        }
       }
     } catch (err) {
       console.error("Failed to attach evidence file:", err);
