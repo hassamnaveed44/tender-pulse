@@ -38,7 +38,7 @@ export function ActiveTendersOverview({ tenders }: ActiveTendersOverviewProps) {
   });
 
   return (
-    <div className="bg-surface rounded-lg border border-border p-5 shadow-subtle space-y-4">
+    <div className="bg-surface rounded-lg border border-border p-4 sm:p-5 shadow-subtle space-y-4 min-w-0 max-w-full overflow-hidden">
       {/* Header Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
@@ -73,7 +73,7 @@ export function ActiveTendersOverview({ tenders }: ActiveTendersOverviewProps) {
         </div>
 
         {/* Status Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 max-w-full min-w-0">
           {["ALL", "ACTIVE", "IN_REVIEW", "DRAFT"].map((status) => (
             <button
               key={status}

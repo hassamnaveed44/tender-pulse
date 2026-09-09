@@ -16,22 +16,22 @@ export function AttentionFeed({ expiringDocs }: AttentionFeedProps) {
         <div className="p-2 rounded bg-[#FDF4E7] text-[#A56A20] shrink-0 mt-0.5">
           <AlertOctagon className="w-5 h-5" />
         </div>
-        <div className="space-y-1">
-          <h4 className="text-xs font-bold text-[#7A4B10] flex items-center gap-1.5">
+        <div className="space-y-1 min-w-0 flex-1">
+          <h4 className="text-xs font-bold text-[#7A4B10] flex items-center gap-1.5 flex-wrap">
             <span>Compliance Attention Required</span>
             <span className="bg-[#A56A20] text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono">
               {expiringDocs.length} Alerts
             </span>
           </h4>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#A56A20]">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#A56A20] min-w-0">
             {expiringDocs.map((doc) => (
-              <span key={doc.id} className="inline-flex items-center gap-1">
+              <span key={doc.id} className="inline-flex items-center gap-1 max-w-full">
                 <FileWarning className="w-3.5 h-3.5 shrink-0" />
-                <strong className="font-semibold">{doc.fileName}</strong>
+                <strong className="font-semibold truncate max-w-[180px] sm:max-w-xs inline-block align-bottom">{doc.fileName}</strong>
                 {doc.isExpired ? (
-                  <span className="text-danger font-bold uppercase text-[10px]">(Expired)</span>
+                  <span className="text-danger font-bold uppercase text-[10px] shrink-0">(Expired)</span>
                 ) : (
-                  <span>(Expires in {doc.daysToExpiry} days)</span>
+                  <span className="shrink-0">(Expires in {doc.daysToExpiry} days)</span>
                 )}
               </span>
             ))}
