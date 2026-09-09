@@ -26,7 +26,7 @@ export function Topbar() {
   return (
     <header className="h-16 border-b border-border bg-surface px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20">
       {/* Left: Dynamic Breadcrumbs */}
-      <div className="flex items-center gap-2 text-xs text-text-secondary overflow-x-auto py-1">
+      <div className="flex-1 min-w-0 flex items-center gap-2 text-xs text-text-secondary overflow-x-auto py-1 mr-2">
         <Link href="/dashboard" className="hover:text-text-primary font-medium shrink-0">
           Workspace
         </Link>
@@ -91,7 +91,7 @@ export function Topbar() {
 
           {/* Notifications Dropdown Panel */}
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-lg bg-surface border border-border shadow-dropdown p-4 z-50 text-xs animate-in fade-in duration-150">
+            <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] sm:w-96 rounded-lg bg-surface border border-border shadow-dropdown p-4 z-50 text-xs animate-in fade-in duration-150">
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <span className="font-semibold text-text-primary">Recent Notifications</span>
                 <span className="text-[10px] font-mono text-accent">3 NEW</span>
