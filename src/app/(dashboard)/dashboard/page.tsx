@@ -25,7 +25,7 @@ export default async function DashboardPage() {
             </h1>
             <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
               <Sparkles className="w-3 h-3" />
-              Phase 3 Live
+              Real-time System
             </span>
           </div>
           <p className="text-xs text-text-secondary mt-1">

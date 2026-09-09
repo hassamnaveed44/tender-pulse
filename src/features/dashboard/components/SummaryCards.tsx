@@ -10,7 +10,7 @@ export function SummaryCards({ metrics }: SummaryCardsProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* 1. Active Tenders */}
-      <div className="p-4 rounded-lg bg-surface border border-border shadow-subtle hover:border-primary/30 transition-all">
+      <div className="p-4 rounded-lg bg-surface border border-border shadow-subtle hover:-translate-y-0.5 hover:shadow-card hover:border-primary/40 transition-all duration-200">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
             Active Tenders
@@ -29,7 +29,7 @@ export function SummaryCards({ metrics }: SummaryCardsProps) {
       </div>
 
       {/* 2. Pending Review */}
-      <div className="p-4 rounded-lg bg-surface border border-border shadow-subtle hover:border-[#A56A20]/30 transition-all">
+      <div className="p-4 rounded-lg bg-surface border border-border shadow-subtle hover:-translate-y-0.5 hover:shadow-card hover:border-[#A56A20]/40 transition-all duration-200">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
             Pending Review
@@ -47,7 +47,7 @@ export function SummaryCards({ metrics }: SummaryCardsProps) {
       </div>
 
       {/* 3. Missing Evidence */}
-      <div className="p-4 rounded-lg bg-surface border border-border shadow-subtle hover:border-danger/30 transition-all">
+      <div className="p-4 rounded-lg bg-surface border border-border shadow-subtle hover:-translate-y-0.5 hover:shadow-card hover:border-danger/40 transition-all duration-200">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
             Missing Evidence
@@ -65,7 +65,7 @@ export function SummaryCards({ metrics }: SummaryCardsProps) {
       </div>
 
       {/* 4. Expiring Documents */}
-      <div className="p-4 rounded-lg bg-surface border border-border shadow-subtle hover:border-[#426A8A]/30 transition-all">
+      <div className="p-4 rounded-lg bg-surface border border-border shadow-subtle hover:-translate-y-0.5 hover:shadow-card hover:border-[#426A8A]/40 transition-all duration-200">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
             Expiring Documents

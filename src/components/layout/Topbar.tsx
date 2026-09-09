@@ -16,15 +16,21 @@ import {
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils/format";
 
+import { CommandPalette } from "./CommandPalette";
+
 export function Topbar() {
   const pathname = usePathname();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
 
   // Generate dynamic breadcrumb segments
   const segments = pathname.split("/").filter(Boolean);
 
   return (
     <header className="h-16 border-b border-border bg-surface px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20">
+      {/* Command Palette Search Modal */}
+      <CommandPalette isOpen={showSearchModal} onClose={() => setShowSearchModal(false)} />
+
       {/* Left: Dynamic Breadcrumbs */}
       <div className="flex-1 min-w-0 flex items-center gap-2 text-xs text-text-secondary overflow-x-auto py-1 mr-2">
         <Link href="/dashboard" className="hover:text-text-primary font-medium shrink-0">
@@ -69,14 +75,17 @@ export function Topbar() {
 
       {/* Right: Actions & User Avatar */}
       <div className="flex items-center gap-3 shrink-0">
-        {/* Quick Search Bar */}
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-surface-alt text-text-secondary text-xs hover:border-[#B9C2C7] cursor-pointer">
-          <Search className="w-3.5 h-3.5" />
+        {/* Quick Search Bar Trigger */}
+        <button
+          onClick={() => setShowSearchModal(true)}
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-surface-alt text-text-secondary text-xs hover:border-[#B9C2C7] hover:text-text-primary transition-all cursor-pointer"
+        >
+          <Search className="w-3.5 h-3.5 text-primary" />
           <span>Quick search...</span>
           <kbd className="font-mono text-[10px] bg-white border border-border px-1.5 py-0.5 rounded text-text-muted">
             ⌘K
           </kbd>
-        </div>
+        </button>
 
         {/* Notifications Bell */}
         <div className="relative">
