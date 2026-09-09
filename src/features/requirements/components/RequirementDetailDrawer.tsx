@@ -17,6 +17,7 @@ interface RequirementDetailDrawerProps {
   onEvidenceAttached?: (requirementId: string, newDoc: any) => void;
 }
 
+import { useRouter } from "next/navigation";
 import { uploadDocumentAction, attachEvidenceAction } from "@/features/documents/actions/documentActions";
 
 export function RequirementDetailDrawer({
@@ -26,6 +27,7 @@ export function RequirementDetailDrawer({
   teamMembers,
   onEvidenceAttached,
 }: RequirementDetailDrawerProps) {
+  const router = useRouter();
   const drawerRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
 
@@ -76,7 +78,7 @@ export function RequirementDetailDrawer({
         setLinkedDocs((prev) => [...prev, newDocItem]);
 
         if (requirement) {
-          await verifyRequirementAction(requirement.id);
+          await verifyRequirementAction(requirement.id, "VERIFIED");
           if (onEvidenceAttached) {
             onEvidenceAttached(requirement.id, newDocItem);
           }
@@ -90,7 +92,11 @@ export function RequirementDetailDrawer({
   }
 
   async function handleVerify() {
-    await verifyRequirementAction(requirement!.id);
+    if (requirement) {
+      const newStatus = requirement.status === "VERIFIED" ? "IN_REVIEW" : "VERIFIED";
+      await verifyRequirementAction(requirement.id, newStatus);
+      router.refresh();
+    }
     onClose();
   }
 

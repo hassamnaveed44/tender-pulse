@@ -56,7 +56,7 @@ export function ComplianceMatrix({
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  function handleEvidenceAttached(reqId: string, newDoc: any) {
+  async function handleEvidenceAttached(reqId: string, newDoc: any) {
     setRequirements((prev) =>
       prev.map((r) =>
         r.id === reqId
@@ -68,6 +68,7 @@ export function ComplianceMatrix({
           : r
       )
     );
+    await verifyRequirementAction(reqId, "VERIFIED");
     router.refresh();
   }
 
@@ -79,7 +80,8 @@ export function ComplianceMatrix({
       prev.map((r) => (r.id === req.id ? { ...r, status: newStatus as any } : r))
     );
 
-    await verifyRequirementAction(req.id);
+    await verifyRequirementAction(req.id, newStatus as any);
+    router.refresh();
   }
 
   async function handleAssignUser(reqId: string, userId: string, e: React.ChangeEvent<HTMLSelectElement>) {

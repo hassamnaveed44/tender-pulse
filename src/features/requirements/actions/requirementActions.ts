@@ -137,7 +137,10 @@ export async function assignUserAction(requirementId: string, userId: string) {
   }
 }
 
-export async function verifyRequirementAction(requirementId: string) {
+export async function verifyRequirementAction(
+  requirementId: string,
+  targetStatus?: "VERIFIED" | "IN_REVIEW" | "MISSING" | "NOT_STARTED"
+) {
   try {
     const existing = await prisma.requirement.findUnique({
       where: { id: requirementId },
@@ -145,7 +148,12 @@ export async function verifyRequirementAction(requirementId: string) {
     });
 
     if (existing) {
-      const newStatus = existing.status === "VERIFIED" ? "IN_REVIEW" : "VERIFIED";
+      const newStatus =
+        targetStatus !== undefined
+          ? targetStatus
+          : existing.status === "VERIFIED"
+          ? "IN_REVIEW"
+          : "VERIFIED";
 
       await prisma.requirement.update({
         where: { id: requirementId },
@@ -174,11 +182,13 @@ export async function verifyRequirementAction(requirementId: string) {
       }
 
       revalidatePath(`/tenders/${existing.tenderId}`);
+      revalidatePath(`/tenders`);
+      revalidatePath(`/dashboard`);
     }
 
     return { success: true };
   } catch (error) {
-    console.warn("Prisma error in verifyRequirementAction:", error);
+    console.error("Prisma error in verifyRequirementAction:", error);
     return { success: true };
   }
 }
