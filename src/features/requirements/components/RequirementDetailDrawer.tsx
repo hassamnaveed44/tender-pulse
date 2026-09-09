@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, CheckCircle2, ShieldCheck, Paperclip, User, FileText, AlertTriangle, ExternalLink } from "lucide-react";
 import gsap from "gsap";
 import { Button } from "@/components/ui/Button";
@@ -16,6 +16,8 @@ interface RequirementDetailDrawerProps {
   teamMembers: AssignedUser[];
 }
 
+import { uploadDocumentAction, attachEvidenceAction } from "@/features/documents/actions/documentActions";
+
 export function RequirementDetailDrawer({
   isOpen,
   onClose,
@@ -24,6 +26,15 @@ export function RequirementDetailDrawer({
 }: RequirementDetailDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
+
+  const [linkedDocs, setLinkedDocs] = useState<any[]>(requirement?.evidenceDocs || []);
+  const [isAttaching, setIsAttaching] = useState(false);
+
+  useEffect(() => {
+    if (requirement) {
+      setLinkedDocs(requirement.evidenceDocs || []);
+    }
+  }, [requirement]);
 
   useEffect(() => {
     if (isOpen) {
@@ -41,6 +52,37 @@ export function RequirementDetailDrawer({
   }, [isOpen]);
 
   if (!isOpen || !requirement) return null;
+
+  async function handleFileUploadAndAttach(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    setIsAttaching(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("fileType", requirement?.category || "Certificate");
+
+      const uploadRes = await uploadDocumentAction(formData);
+      if (uploadRes.success) {
+        // Find created document or link directly
+        const newDocItem = {
+          id: `doc-${Date.now()}`,
+          fileName: file.name,
+          fileType: requirement?.category || "Certificate",
+        };
+
+        setLinkedDocs((prev) => [...prev, newDocItem]);
+
+        // Auto verify requirement status when evidence is attached
+        await verifyRequirementAction(requirement!.id);
+      }
+    } catch (err) {
+      console.error("Failed to attach evidence file:", err);
+    } finally {
+      setIsAttaching(false);
+    }
+  }
 
   async function handleVerify() {
     await verifyRequirementAction(requirement!.id);
@@ -125,27 +167,42 @@ export function RequirementDetailDrawer({
             </div>
 
             {/* Linked Evidence Files */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
                   Linked Evidence Library Files
                 </h4>
                 <span className="text-[11px] font-mono font-bold text-accent">
-                  {requirement.evidenceDocs.length} Linked
+                  {linkedDocs.length} Linked
                 </span>
               </div>
 
-              {requirement.evidenceDocs.length === 0 ? (
+              {/* Upload & Attach File Button */}
+              <div className="flex items-center gap-2">
+                <label className="cursor-pointer flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-dashed border-primary/60 bg-primary/5 text-primary text-xs font-bold hover:bg-primary/10 transition-colors">
+                  <Paperclip className="w-3.5 h-3.5" />
+                  <span>{isAttaching ? "Attaching Evidence..." : "+ Upload & Link Evidence File"}</span>
+                  <input
+                    type="file"
+                    onChange={handleFileUploadAndAttach}
+                    disabled={isAttaching}
+                    className="hidden"
+                    accept=".pdf,.docx,.jpg,.png"
+                  />
+                </label>
+              </div>
+
+              {linkedDocs.length === 0 ? (
                 <div className="p-4 rounded-md border border-dashed border-danger/40 bg-danger/5 text-center">
                   <AlertTriangle className="w-5 h-5 text-danger mx-auto mb-1" />
                   <p className="text-xs font-bold text-danger">Missing Mandatory Evidence</p>
                   <p className="text-[11px] text-text-secondary mt-0.5">
-                    Attach certificate or policy file from Evidence Library to reach 100% readiness.
+                    Click the button above to upload a certificate, policy, or audit report file.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {requirement.evidenceDocs.map((doc) => (
+                  {linkedDocs.map((doc) => (
                     <div
                       key={doc.id}
                       className="p-3 rounded-md bg-surface border border-border flex items-center justify-between text-xs"
