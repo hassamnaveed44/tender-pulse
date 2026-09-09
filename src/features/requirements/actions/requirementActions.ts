@@ -2,6 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db/prisma";
+import {
+  notifyTaskAssignment,
+  notifyStatusUpdate,
+  notifyRequirementVerified,
+} from "@/features/notifications/services/eventNotificationService";
 
 export async function createRequirementAction(
   tenderId: string,
@@ -72,6 +77,20 @@ export async function updateRequirementAction(
         },
       });
 
+      // If member updated status to IN_REVIEW, notify Admin!
+      if (data.status === "IN_REVIEW") {
+        const admin = await prisma.user.findFirst();
+        if (admin) {
+          await notifyStatusUpdate(
+            admin.id,
+            "Team Member",
+            existing.title,
+            "IN_REVIEW",
+            existing.tenderId
+          );
+        }
+      }
+
       revalidatePath(`/tenders/${existing.tenderId}`);
     }
 
@@ -103,6 +122,9 @@ export async function assignUserAction(requirementId: string, userId: string) {
             assignedBy: assigner.id,
           },
         });
+
+        // Dispatch real notification to assigned user!
+        await notifyTaskAssignment(userId, existing.title, existing.tenderId);
       }
 
       revalidatePath(`/tenders/${existing.tenderId}`);
@@ -119,6 +141,7 @@ export async function verifyRequirementAction(requirementId: string) {
   try {
     const existing = await prisma.requirement.findUnique({
       where: { id: requirementId },
+      include: { assignments: true },
     });
 
     if (existing) {
@@ -130,15 +153,24 @@ export async function verifyRequirementAction(requirementId: string) {
       });
 
       const actor = await prisma.user.findFirst();
-      if (actor && newStatus === "VERIFIED") {
+      if (actor) {
         await prisma.auditLog.create({
           data: {
             actorId: actor.id,
             tenderId: existing.tenderId,
-            type: "REQUIREMENT_VERIFIED",
+            type: newStatus === "VERIFIED" ? "REQUIREMENT_VERIFIED" : "REQUIREMENT_UNVERIFIED",
             payload: { requirementId, title: existing.title },
           },
         });
+      }
+
+      // Notify assigned member if requirement was verified by Admin
+      if (newStatus === "VERIFIED" && existing.assignments[0]) {
+        await notifyRequirementVerified(
+          existing.assignments[0].userId,
+          existing.title,
+          existing.tenderId
+        );
       }
 
       revalidatePath(`/tenders/${existing.tenderId}`);

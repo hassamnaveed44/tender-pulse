@@ -74,7 +74,7 @@ export function RfpUploadDropzone({ tenderId, onUploadSuccess }: RfpUploadDropzo
   return (
     <div className="bg-surface rounded-lg border border-border p-6 shadow-subtle space-y-5 min-w-0 max-w-full">
       {/* Header Info */}
-      <div className="flex items-center justify-between pb-3 border-b border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
         <div>
           <h3 className="text-sm font-bold text-text-primary tracking-tight flex items-center gap-2">
             <UploadCloud className="w-4 h-4 text-primary" />
@@ -84,9 +84,17 @@ export function RfpUploadDropzone({ tenderId, onUploadSuccess }: RfpUploadDropzo
             Upload main RFP specification documents, Addendums, or Clarification PDFs.
           </p>
         </div>
-        <span className="text-[10px] font-mono font-bold bg-[#E8F4F3] text-accent px-2 py-0.5 rounded">
-          OCR & NLP Enabled
-        </span>
+
+        <div className="flex items-center gap-2">
+          <a
+            href="/test-rfps/Sample_Transit_Signaling_RFP.pdf"
+            download
+            className="text-[11px] font-mono font-bold bg-[#173B4D] text-white px-2.5 py-1 rounded hover:bg-primary transition-colors flex items-center gap-1"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-accent" />
+            Download Sample Test RFP PDF
+          </a>
+        </div>
       </div>
 
       {/* Drag and Drop Zone */}
