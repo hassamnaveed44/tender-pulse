@@ -2,6 +2,7 @@ import React from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { MobileNav } from "@/components/layout/MobileNav";
+import { PageTransition } from "@/components/shared/PageTransition";
 
 export default function DashboardLayout({
   children,
@@ -9,7 +10,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row antialiased">
+    <div className="min-h-screen bg-background flex flex-col md:flex-row antialiased selection:bg-accent selection:text-white">
       {/* Persistent Left Sidebar (Desktop & Tablet) */}
       <Sidebar />
 
@@ -18,9 +19,11 @@ export default function DashboardLayout({
         {/* Topbar Shell */}
         <Topbar />
 
-        {/* Page Viewport */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto animate-in fade-in duration-200">
-          {children}
+        {/* Page Viewport with Smooth Page Transition */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+          <PageTransition>
+            {children}
+          </PageTransition>
         </main>
       </div>
 

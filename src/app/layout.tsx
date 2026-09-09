@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "TenderPulse — Tender & RFP Compliance Management Platform",
-  description: "Centralize tender compliance management, extract mandatory requirements, assign responsibilities, and eliminate compliance risk.",
+  description:
+    "Centralize tender compliance management, extract mandatory requirements, assign responsibilities, and eliminate compliance risk.",
   icons: {
     icon: "/favicon.ico",
   },
@@ -14,7 +16,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
+  const content = (
     <html lang="en" className="h-full bg-background">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -29,4 +31,10 @@ export default function RootLayout({
       </body>
     </html>
   );
+
+  if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+    return <ClerkProvider>{content}</ClerkProvider>;
+  }
+
+  return content;
 }
