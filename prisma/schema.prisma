@@ -1,21 +1,21 @@
-// TenderPulse Prisma Schema
+// TenderPulse Prisma Schema — Neon PostgreSQL
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
   id           String   @id @default(uuid())
-  clerkUserId  String   @unique
+  clerkUserId  String   @unique @map("clerk_user_id")
   email        String   @unique
-  fullName     String
-  avatarUrl    String?
-  createdAt    DateTime @default(now())
+  fullName     String   @map("full_name")
+  avatarUrl    String?  @map("avatar_url")
+  createdAt    DateTime @default(now()) @map("created_at")
 
   // Relations
   organizationsCreated Organization[]          @relation("OrgCreator")
@@ -37,8 +37,8 @@ model Organization {
   id        String   @id @default(uuid())
   name      String
   slug      String   @unique
-  createdBy String
-  createdAt DateTime @default(now())
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
   creator   User                 @relation("OrgCreator", fields: [createdBy], references: [id])
@@ -51,12 +51,12 @@ model Organization {
 
 model OrganizationMember {
   id             String   @id @default(uuid())
-  organizationId String
-  userId         String
+  organizationId String   @map("organization_id")
+  userId         String   @map("user_id")
   role           String   @default("MEMBER") // ADMIN or MEMBER
-  invitedBy      String?
-  isActive       Boolean  @default(true)
-  joinedAt       DateTime @default(now())
+  invitedBy      String?  @map("invited_by")
+  isActive       Boolean  @default(true) @map("is_active")
+  joinedAt       DateTime @default(now()) @map("joined_at")
 
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -69,14 +69,14 @@ model OrganizationMember {
 
 model Tender {
   id                 String   @id @default(uuid())
-  organizationId     String
+  organizationId     String   @map("organization_id")
   title              String
-  clientName         String?
-  referenceNumber    String   @unique
+  clientName         String?  @map("client_name")
+  referenceNumber    String   @unique @map("reference_number")
   status             String   @default("DRAFT") // DRAFT, EXTRACTING, IN_REVIEW, ACTIVE, SUBMITTED, CLOSED
-  submissionDeadline DateTime
-  createdBy          String
-  createdAt          DateTime @default(now())
+  submissionDeadline DateTime @map("submission_deadline")
+  createdBy          String   @map("created_by")
+  createdAt          DateTime @default(now()) @map("created_at")
 
   // Relations
   organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -92,12 +92,12 @@ model Tender {
 
 model TenderDocument {
   id         String   @id @default(uuid())
-  tenderId   String
-  fileType   String   @default("RFP") // RFP, ADDENDUM, CLARIFICATION
-  storageKey String
-  fileName   String
-  uploadedBy String
-  uploadedAt DateTime @default(now())
+  tenderId   String   @map("tender_id")
+  fileType   String   @default("RFP") @map("file_type") // RFP, ADDENDUM, CLARIFICATION
+  storageKey String   @map("storage_key")
+  fileName   String   @map("file_name")
+  uploadedBy String   @map("uploaded_by")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
 
   // Relations
   tender                Tender                 @relation(fields: [tenderId], references: [id], onDelete: Cascade)
@@ -109,12 +109,12 @@ model TenderDocument {
 
 model ExtractedRequirement {
   id               String   @id @default(uuid())
-  tenderId         String
-  sourceDocumentId String?
-  sourcePage       Int?
-  rawPayload       String   // JSON string containing title, description, category, mandatory, confidence
+  tenderId         String   @map("tender_id")
+  sourceDocumentId String?  @map("source_document_id")
+  sourcePage       Int?     @map("source_page")
+  rawPayload       Json     @map("raw_payload") // JSON containing title, description, category, mandatory, confidence
   status           String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
-  createdAt        DateTime @default(now())
+  createdAt        DateTime @default(now()) @map("created_at")
 
   // Relations
   tender         Tender          @relation(fields: [tenderId], references: [id], onDelete: Cascade)
@@ -126,16 +126,16 @@ model ExtractedRequirement {
 
 model Requirement {
   id                 String   @id @default(uuid())
-  tenderId           String
+  tenderId           String   @map("tender_id")
   title              String
   description        String?
   category           String?  // e.g. Eligibility, Technical, Financial, Legal
-  isMandatory        Boolean  @default(true)
+  isMandatory        Boolean  @default(true) @map("is_mandatory")
   status             String   @default("NOT_STARTED") // NOT_STARTED, IN_REVIEW, VERIFIED, MISSING
   source             String   @default("EXTRACTED") // EXTRACTED, MANUAL
-  sourceExtractionId String?
-  sourcePage         Int?
-  createdAt          DateTime @default(now())
+  sourceExtractionId String?  @map("source_extraction_id")
+  sourcePage         Int?     @map("source_page")
+  createdAt          DateTime @default(now()) @map("created_at")
 
   // Relations
   tender            Tender                  @relation(fields: [tenderId], references: [id], onDelete: Cascade)
@@ -148,10 +148,10 @@ model Requirement {
 
 model RequirementAssignment {
   id            String   @id @default(uuid())
-  requirementId String
-  userId        String
-  assignedBy    String
-  assignedAt    DateTime @default(now())
+  requirementId String   @map("requirement_id")
+  userId        String   @map("user_id")
+  assignedBy    String   @map("assigned_by")
+  assignedAt    DateTime @default(now()) @map("assigned_at")
 
   // Relations
   requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
@@ -163,13 +163,13 @@ model RequirementAssignment {
 
 model Document {
   id             String    @id @default(uuid())
-  organizationId String
-  fileName       String
-  storageKey     String
-  fileType       String?   // Certificate, Financial Statement, Policy, etc.
-  expiryDate     DateTime?
-  uploadedBy     String
-  createdAt      DateTime  @default(now())
+  organizationId String    @map("organization_id")
+  fileName       String    @map("file_name")
+  storageKey     String    @map("storage_key")
+  fileType       String?   @map("file_type") // Certificate, Financial Statement, Policy, etc.
+  expiryDate     DateTime? @map("expiry_date")
+  uploadedBy     String    @map("uploaded_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
 
   // Relations
   organization  Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -181,10 +181,10 @@ model Document {
 
 model RequirementEvidence {
   id            String   @id @default(uuid())
-  requirementId String
-  documentId    String
-  attachedBy    String
-  attachedAt    DateTime @default(now())
+  requirementId String   @map("requirement_id")
+  documentId    String   @map("document_id")
+  attachedBy    String   @map("attached_by")
+  attachedAt    DateTime @default(now()) @map("attached_at")
 
   // Relations
   requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
@@ -197,12 +197,12 @@ model RequirementEvidence {
 
 model Notification {
   id        String   @id @default(uuid())
-  userId    String
-  tenderId  String?
+  userId    String   @map("user_id")
+  tenderId  String?  @map("tender_id")
   type      String   // ASSIGNMENT, DEADLINE_APPROACHING, DOCUMENT_EXPIRING, VERIFIED, EXTRACTION_COMPLETE
   message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -213,11 +213,11 @@ model Notification {
 
 model AuditLog {
   id        String   @id @default(uuid())
-  actorId   String
-  tenderId  String?
+  actorId   String   @map("actor_id")
+  tenderId  String?  @map("tender_id")
   type      String   // REQUIREMENT_ACCEPTED, EVIDENCE_ATTACHED, REQUIREMENT_VERIFIED, TENDER_SUBMITTED, etc.
-  payload   String?  // JSON string
-  createdAt DateTime @default(now())
+  payload   Json?    // JSON data
+  createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
   actor  User    @relation("ActorLogs", fields: [actorId], references: [id], onDelete: Cascade)
