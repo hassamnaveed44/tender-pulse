@@ -120,3 +120,57 @@ export async function uploadRfpDocumentAction(formData: FormData) {
     };
   }
 }
+
+export async function submitTenderAction(tenderId: string) {
+  try {
+    const tender = await prisma.tender.findUnique({
+      where: { id: tenderId },
+      include: { requirements: true },
+    });
+
+    if (!tender) {
+      return { success: false, error: "Tender record not found." };
+    }
+
+    const unverifiedMandatory = tender.requirements.filter(
+      (r) => r.isMandatory && r.status !== "VERIFIED"
+    );
+
+    if (unverifiedMandatory.length > 0) {
+      return {
+        success: false,
+        code: "READINESS_INCOMPLETE",
+        error: `Cannot submit tender. ${unverifiedMandatory.length} mandatory requirement(s) remain unverified.`,
+      };
+    }
+
+    const updated = await prisma.tender.update({
+      where: { id: tenderId },
+      data: { status: "SUBMITTED" },
+    });
+
+    const firstUser = await prisma.user.findFirst();
+    if (firstUser) {
+      await prisma.auditLog.create({
+        data: {
+          actorId: firstUser.id,
+          tenderId: tender.id,
+          type: "TENDER_SUBMITTED",
+          payload: { title: tender.title, referenceNumber: tender.referenceNumber },
+        },
+      });
+    }
+
+    revalidatePath("/tenders");
+    revalidatePath(`/tenders/${tenderId}`);
+
+    return {
+      success: true,
+      message: "Tender successfully submitted!",
+      tender: updated,
+    };
+  } catch (error: any) {
+    console.error("Error submitting tender:", error);
+    return { success: false, error: error.message || "Failed to submit tender." };
+  }
+}

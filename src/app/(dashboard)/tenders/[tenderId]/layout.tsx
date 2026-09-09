@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { ArrowLeft, Send, Sparkles, AlertCircle, FileSpreadsheet, FolderLock, Users, FileUp } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ReadinessGauge } from "@/components/shared/ReadinessGauge";
@@ -16,7 +17,13 @@ interface TenderLayoutProps {
 
 export default async function TenderWorkspaceLayout({ children, params }: TenderLayoutProps) {
   const { tenderId } = params;
-  const { tenderDetails } = await fetchTenderWorkspaceData(tenderId);
+  const data = await fetchTenderWorkspaceData(tenderId);
+
+  if (!data) {
+    notFound();
+  }
+
+  const { tenderDetails } = data;
 
   const isUrgent = tenderDetails.daysRemaining <= 14;
   const isCritical = tenderDetails.daysRemaining <= 5;

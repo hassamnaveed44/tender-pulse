@@ -14,7 +14,9 @@ import {
   ChevronRight,
   Plus,
   Sparkles,
+  LogOut,
 } from "lucide-react";
+import { SignOutButton } from "@clerk/nextjs";
 import { cn } from "@/lib/utils/format";
 import { Button } from "@/components/ui/Button";
 
@@ -169,11 +171,11 @@ export function Sidebar() {
         </div>
       )}
 
-      {/* Organization Badge Footer */}
+      {/* Organization Badge Footer & Logout */}
       {!isCollapsed && (
-        <div className="p-3.5 border-t border-border bg-[#FBFBFA]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded bg-primary text-white font-mono text-xs flex items-center justify-center font-bold">
+        <div className="p-3.5 border-t border-border bg-[#FBFBFA] flex items-center justify-between">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-7 h-7 rounded bg-primary text-white font-mono text-xs flex items-center justify-center font-bold shrink-0">
               AE
             </div>
             <div className="flex flex-col min-w-0">
@@ -181,10 +183,18 @@ export function Sidebar() {
                 Apex Engineering
               </span>
               <span className="text-[10px] text-accent font-medium font-mono">
-                ADMIN WORKSPACE
+                WORKSPACE
               </span>
             </div>
           </div>
+          <SignOutButton redirectUrl="/">
+            <button
+              className="p-1.5 rounded text-text-secondary hover:text-red-600 hover:bg-red-50 transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </SignOutButton>
         </div>
       )}
     </aside>

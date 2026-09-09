@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { ArrowLeft, Sparkles, FileText, ArrowRight } from "lucide-react";
 import { fetchExtractedCandidates, fetchTenderDetailsForReview } from "@/features/extraction/services/extractionService";
 import { ExtractionProgressIndicator } from "@/features/extraction/components/ExtractionProgressIndicator";
@@ -20,6 +21,10 @@ export default async function ExtractionReviewPage({ params }: ReviewPageProps) 
     fetchExtractedCandidates(tenderId),
     fetchTenderDetailsForReview(tenderId),
   ]);
+
+  if (!tender) {
+    notFound();
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto min-w-0 max-w-full">

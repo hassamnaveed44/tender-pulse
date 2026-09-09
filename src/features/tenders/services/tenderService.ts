@@ -1,73 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { TenderListItem } from "../types/tenderTypes";
 
-const FALLBACK_TENDERS: TenderListItem[] = [
-  {
-    id: "tender-1",
-    title: "Metropolitan Transit Rail Electrification & Signaling System",
-    clientName: "State Department of Transportation",
-    referenceNumber: "TP-2026-00142",
-    status: "ACTIVE",
-    submissionDeadline: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000),
-    daysRemaining: 12,
-    totalRequirements: 5,
-    verifiedRequirements: 4,
-    missingRequirements: 1,
-    readinessPercentage: 80,
-    createdBy: "user-1",
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    documentsCount: 2,
-  },
-  {
-    id: "tender-2",
-    title: "Smart Grid Power Substation SCADA Modernization",
-    clientName: "National Energy Authority",
-    referenceNumber: "TP-2026-00089",
-    status: "IN_REVIEW",
-    submissionDeadline: new Date(Date.now() + 24 * 24 * 60 * 60 * 1000),
-    daysRemaining: 24,
-    totalRequirements: 4,
-    verifiedRequirements: 1,
-    missingRequirements: 1,
-    readinessPercentage: 25,
-    createdBy: "user-2",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    documentsCount: 1,
-  },
-  {
-    id: "tender-3",
-    title: "Regional Municipal Water Filtration & SCADA Upgrade",
-    clientName: "City Water Works & Utilities",
-    referenceNumber: "TP-2026-00201",
-    status: "DRAFT",
-    submissionDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    daysRemaining: 30,
-    totalRequirements: 0,
-    verifiedRequirements: 0,
-    missingRequirements: 0,
-    readinessPercentage: 0,
-    createdBy: "user-1",
-    createdAt: new Date(),
-    documentsCount: 1,
-  },
-  {
-    id: "tender-4",
-    title: "Airport Automation & Terminal Security Monitoring System",
-    clientName: "Federal Airport Authority",
-    referenceNumber: "TP-2025-00982",
-    status: "SUBMITTED",
-    submissionDeadline: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-    daysRemaining: 0,
-    totalRequirements: 12,
-    verifiedRequirements: 12,
-    missingRequirements: 0,
-    readinessPercentage: 100,
-    createdBy: "user-1",
-    createdAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
-    documentsCount: 3,
-  },
-];
-
 export async function fetchTendersList(
   query?: string,
   statusFilter?: string
@@ -82,7 +15,7 @@ export async function fetchTendersList(
     });
 
     if (tenders.length === 0) {
-      return filterTenders(FALLBACK_TENDERS, query, statusFilter);
+      return [];
     }
 
     const now = new Date();
@@ -122,8 +55,8 @@ export async function fetchTendersList(
 
     return filterTenders(formatted, query, statusFilter);
   } catch (error) {
-    console.warn("Prisma query failed in fetchTendersList, returning fallback dataset:", error);
-    return filterTenders(FALLBACK_TENDERS, query, statusFilter);
+    console.error("Prisma query failed in fetchTendersList:", error);
+    return [];
   }
 }
 

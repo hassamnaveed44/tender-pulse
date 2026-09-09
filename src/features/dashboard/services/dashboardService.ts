@@ -50,100 +50,6 @@ export interface DashboardOverviewData {
   expiringDocs: ExpiringDocAlert[];
 }
 
-// Fallback data if DB query returns empty / during initial preview
-const FALLBACK_METRICS: DashboardMetricsData = {
-  activeTendersCount: 2,
-  pendingReviewCount: 4,
-  missingEvidenceCount: 1,
-  expiringDocsCount: 2,
-  avgReadinessScore: 80,
-};
-
-const FALLBACK_TASKS: TaskItem[] = [
-  {
-    id: "req-4",
-    requirementTitle: "Lead Systems Engineer CV and Rail Safety Accreditation",
-    tenderId: "tender-1",
-    tenderTitle: "Metropolitan Transit Rail Electrification & Signaling System",
-    tenderRef: "TP-2026-00142",
-    category: "Technical",
-    isMandatory: true,
-    status: "MISSING",
-    sourcePage: 62,
-    assignedAt: new Date(),
-  },
-  {
-    id: "req-3",
-    requirementTitle: "Public Liability and Professional Indemnity Coverage ($50M)",
-    tenderId: "tender-1",
-    tenderTitle: "Metropolitan Transit Rail Electrification & Signaling System",
-    tenderRef: "TP-2026-00142",
-    category: "Legal",
-    isMandatory: true,
-    status: "IN_REVIEW",
-    sourcePage: 45,
-    assignedAt: new Date(Date.now() - 86400000),
-  },
-  {
-    id: "req-1",
-    requirementTitle: "Valid ISO 9001:2015 Quality Management Certification",
-    tenderId: "tender-1",
-    tenderTitle: "Metropolitan Transit Rail Electrification & Signaling System",
-    tenderRef: "TP-2026-00142",
-    category: "Eligibility",
-    isMandatory: true,
-    status: "VERIFIED",
-    sourcePage: 14,
-    assignedAt: new Date(Date.now() - 172800000),
-  },
-];
-
-const FALLBACK_DEADLINES: DeadlineItem[] = [
-  {
-    id: "tender-1",
-    title: "Metropolitan Transit Rail Electrification & Signaling System",
-    referenceNumber: "TP-2026-00142",
-    clientName: "State Department of Transportation",
-    status: "ACTIVE",
-    submissionDeadline: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000),
-    daysRemaining: 12,
-    totalRequirements: 5,
-    verifiedRequirements: 4,
-    readinessPercentage: 80,
-  },
-  {
-    id: "tender-2",
-    title: "Smart Grid Power Substation SCADA Modernization",
-    referenceNumber: "TP-2026-00089",
-    clientName: "National Energy Authority",
-    status: "IN_REVIEW",
-    submissionDeadline: new Date(Date.now() + 24 * 24 * 60 * 60 * 1000),
-    daysRemaining: 24,
-    totalRequirements: 4,
-    verifiedRequirements: 1,
-    readinessPercentage: 25,
-  },
-];
-
-const FALLBACK_EXPIRING_DOCS: ExpiringDocAlert[] = [
-  {
-    id: "doc-3",
-    fileName: "Public_Liability_Insurance_50M.pdf",
-    fileType: "Insurance Policy",
-    expiryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-    daysToExpiry: 14,
-    isExpired: false,
-  },
-  {
-    id: "doc-4",
-    fileName: "SOC2_Type_II_Compliance_Report.pdf",
-    fileType: "Audit Report",
-    expiryDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    daysToExpiry: -5,
-    isExpired: true,
-  },
-];
-
 export async function getDashboardData(): Promise<DashboardOverviewData> {
   try {
     const activeTenders = await prisma.tender.findMany({
@@ -153,15 +59,6 @@ export async function getDashboardData(): Promise<DashboardOverviewData> {
         extractedRequirements: { where: { status: "PENDING" } },
       },
     });
-
-    if (activeTenders.length === 0) {
-      return {
-        metrics: FALLBACK_METRICS,
-        tasks: FALLBACK_TASKS,
-        deadlines: FALLBACK_DEADLINES,
-        expiringDocs: FALLBACK_EXPIRING_DOCS,
-      };
-    }
 
     const pendingReviewCount = await prisma.extractedRequirement.count({
       where: { status: "PENDING" },
@@ -253,17 +150,23 @@ export async function getDashboardData(): Promise<DashboardOverviewData> {
 
     return {
       metrics,
-      tasks: tasks.length > 0 ? tasks : FALLBACK_TASKS,
-      deadlines: deadlines.length > 0 ? deadlines : FALLBACK_DEADLINES,
-      expiringDocs: formattedExpiringDocs.length > 0 ? formattedExpiringDocs : FALLBACK_EXPIRING_DOCS,
+      tasks,
+      deadlines,
+      expiringDocs: formattedExpiringDocs,
     };
   } catch (error) {
-    console.warn("Failed to fetch dashboard data from DB, using fallback dataset:", error);
+    console.error("Failed to fetch dashboard data from DB:", error);
     return {
-      metrics: FALLBACK_METRICS,
-      tasks: FALLBACK_TASKS,
-      deadlines: FALLBACK_DEADLINES,
-      expiringDocs: FALLBACK_EXPIRING_DOCS,
+      metrics: {
+        activeTendersCount: 0,
+        pendingReviewCount: 0,
+        missingEvidenceCount: 0,
+        expiringDocsCount: 0,
+        avgReadinessScore: 0,
+      },
+      tasks: [],
+      deadlines: [],
+      expiringDocs: [],
     };
   }
 }
