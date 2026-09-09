@@ -19,50 +19,9 @@ export interface OrganizationDetails {
   membersCount: number;
 }
 
-const FALLBACK_ORG: OrganizationDetails = {
-  id: "org-1",
-  name: "Apex Engineering & Infrastructure",
-  slug: "apex-engineering",
-  createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
-  membersCount: 3,
-};
-
-const FALLBACK_MEMBERS: OrgMemberItem[] = [
-  {
-    id: "mem-1",
-    userId: "user-1",
-    fullName: "Hassam Naveed",
-    email: "hassam@tenderpulse.io",
-    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-    role: "ADMIN",
-    isActive: true,
-    joinedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: "mem-2",
-    userId: "user-2",
-    fullName: "Sarah Chen",
-    email: "sarah.chen@tenderpulse.io",
-    avatarUrl: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80",
-    role: "MEMBER",
-    isActive: true,
-    joinedAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: "mem-3",
-    userId: "user-3",
-    fullName: "Marcus Vance",
-    email: "marcus.vance@tenderpulse.io",
-    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-    role: "MEMBER",
-    isActive: true,
-    joinedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-  },
-];
-
 export async function fetchOrganizationSettingsData() {
   try {
-    const org = await prisma.organization.findFirst({
+    let org = await prisma.organization.findFirst({
       include: {
         members: {
           include: { user: true },
@@ -71,10 +30,35 @@ export async function fetchOrganizationSettingsData() {
     });
 
     if (!org) {
-      return {
-        organization: FALLBACK_ORG,
-        members: FALLBACK_MEMBERS,
-      };
+      let firstUser = await prisma.user.findFirst();
+      if (!firstUser) {
+        firstUser = await prisma.user.create({
+          data: {
+            clerkUserId: "user_system_admin",
+            email: "admin@tenderpulse.io",
+            fullName: "System Admin",
+          },
+        });
+      }
+
+      org = await prisma.organization.create({
+        data: {
+          name: "Apex Engineering & Infrastructure",
+          slug: "apex-engineering",
+          createdBy: firstUser.id,
+          members: {
+            create: {
+              userId: firstUser.id,
+              role: "ADMIN",
+            },
+          },
+        },
+        include: {
+          members: {
+            include: { user: true },
+          },
+        },
+      });
     }
 
     const organization: OrganizationDetails = {
@@ -98,13 +82,19 @@ export async function fetchOrganizationSettingsData() {
 
     return {
       organization,
-      members: members.length > 0 ? members : FALLBACK_MEMBERS,
+      members,
     };
   } catch (error) {
-    console.warn("DB query failed in fetchOrganizationSettingsData, using fallback:", error);
+    console.error("DB query failed in fetchOrganizationSettingsData:", error);
     return {
-      organization: FALLBACK_ORG,
-      members: FALLBACK_MEMBERS,
+      organization: {
+        id: "default-org",
+        name: "TenderPulse Workspace",
+        slug: "tenderpulse-workspace",
+        createdAt: new Date(),
+        membersCount: 0,
+      },
+      members: [],
     };
   }
 }

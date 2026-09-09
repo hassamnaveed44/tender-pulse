@@ -12,7 +12,9 @@ import {
   AlertTriangle,
   ExternalLink,
   Sparkles,
+  LogOut,
 } from "lucide-react";
+import { UserButton, SignOutButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils/format";
 
@@ -150,20 +152,26 @@ export function Topbar() {
 
         <div className="h-4 w-px bg-border hidden sm:block" />
 
-        {/* User Profile */}
-        <Link href="/settings" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold font-mono shadow-sm group-hover:ring-2 group-hover:ring-primary/20">
-            HN
-          </div>
-          <div className="hidden lg:flex flex-col text-left">
-            <span className="text-xs font-semibold text-text-primary leading-none">
-              Hassam Naveed
-            </span>
-            <span className="text-[10px] text-text-secondary leading-none mt-1">
-              Lead Bid Manager
-            </span>
-          </div>
-        </Link>
+        {/* User Profile & Logout */}
+        <div className="flex items-center gap-3">
+          <UserButton
+            afterSignOutUrl="/"
+            appearance={{
+              elements: {
+                userButtonAvatarBox: "w-8 h-8",
+              },
+            }}
+          />
+          <SignOutButton redirectUrl="/">
+            <button
+              className="p-1.5 sm:px-2.5 sm:py-1 rounded-md border border-border bg-surface-alt hover:bg-red-50 hover:border-red-200 text-text-secondary hover:text-red-600 transition-colors flex items-center gap-1.5 text-xs font-medium cursor-pointer"
+              title="Sign Out"
+            >
+              <LogOut className="w-3.5 h-3.5 text-text-secondary group-hover:text-red-600" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          </SignOutButton>
+        </div>
       </div>
     </header>
   );

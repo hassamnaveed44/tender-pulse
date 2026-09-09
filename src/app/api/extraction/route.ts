@@ -1,97 +1,102 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
+import { parsePdfRfpDocument } from "@/features/extraction/services/pdfParserService";
+import { notifyExtractionComplete } from "@/features/notifications/services/eventNotificationService";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { tenderId, documentId } = body;
+    const formData = await request.formData();
+    const tenderId = formData.get("tenderId") as string;
+    const file = formData.get("file") as File | null;
 
     if (!tenderId) {
       return NextResponse.json({ error: "tenderId is required" }, { status: 400 });
     }
 
-    // Check if candidates already exist
-    const existingCount = await prisma.extractedRequirement.count({
-      where: { tenderId },
-    });
+    let parsedClauses = [];
 
-    if (existingCount === 0) {
-      // Seed default candidates for the tender
-      await prisma.extractedRequirement.createMany({
-        data: [
-          {
-            tenderId,
-            sourceDocumentId: documentId || null,
-            sourcePage: 12,
-            rawPayload: {
-              title: "IEC 61850 Substation Automation Standard Compliance",
-              description: "All supplied IEDs, gateways, and bay control units must natively comply with IEC 61850 Edition 2 protocol.",
-              category: "Technical",
-              mandatory: true,
-              confidence: "HIGH",
-              sourcePage: 12,
-            },
-            status: "PENDING",
-          },
-          {
-            tenderId,
-            sourceDocumentId: documentId || null,
-            sourcePage: 19,
-            rawPayload: {
-              title: "Certified NERC CIP Cybersecurity Compliance Audit Report",
-              description: "Vendors must submit audited certification proving adherence to NERC CIP-002 through CIP-014 critical infrastructure standards.",
-              category: "Legal",
-              mandatory: true,
-              confidence: "HIGH",
-              sourcePage: 19,
-            },
-            status: "PENDING",
-          },
-          {
-            tenderId,
-            sourceDocumentId: documentId || null,
-            sourcePage: 34,
-            rawPayload: {
-              title: "Manufacturer 10-Year Hardware Warranty & 4-Hour On-Site SLA",
-              description: "Vendor must guarantee on-site 4-hour replacement SLA for mission-critical SCADA controllers for a 10-year period.",
-              category: "Technical",
-              mandatory: false,
-              confidence: "MEDIUM",
-              sourcePage: 34,
-            },
-            status: "PENDING",
-          },
-          {
-            tenderId,
-            sourceDocumentId: documentId || null,
-            sourcePage: 51,
-            rawPayload: {
-              title: "Bid Bond / Bank Guarantee of 2% Total Contract Value",
-              description: "Submit an unconditional bank guarantee issued by a Tier 1 financial institution valid for no less than 180 days.",
-              category: "Financial",
-              mandatory: true,
-              confidence: "LOW",
-              sourcePage: 51,
-            },
-            status: "PENDING",
-          },
-        ],
-      });
+    if (file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      parsedClauses = await parsePdfRfpDocument(buffer);
 
-      await prisma.tender.update({
-        where: { id: tenderId },
-        data: { status: "IN_REVIEW" },
-      });
+      // Record document in DB
+      const admin = await prisma.user.findFirst();
+      if (admin) {
+        const doc = await prisma.tenderDocument.create({
+          data: {
+            tenderId,
+            fileType: "RFP",
+            fileName: file.name,
+            storageKey: `rfps/${Date.now()}_${file.name}`,
+            uploadedBy: admin.id,
+          },
+        });
+
+        // Delete previous staging candidates if re-running
+        await prisma.extractedRequirement.deleteMany({
+          where: { tenderId },
+        });
+
+        // Insert extracted clauses into ExtractedRequirement
+        await prisma.extractedRequirement.createMany({
+          data: parsedClauses.map((c) => ({
+            tenderId,
+            sourceDocumentId: doc.id,
+            sourcePage: c.sourcePage,
+            rawPayload: {
+              title: c.title,
+              description: c.description,
+              category: c.category,
+              mandatory: c.isMandatory,
+              confidence: c.confidence,
+              sourcePage: c.sourcePage,
+            },
+            status: "PENDING",
+          })),
+        });
+
+        // Notify Admin
+        await notifyExtractionComplete(admin.id, file.name, parsedClauses.length, tenderId);
+      }
+    } else {
+      // Create sample clauses if no file provided
+      const sampleClauses = await parsePdfRfpDocument(Buffer.from(""));
+      const admin = await prisma.user.findFirst();
+      if (admin) {
+        await prisma.extractedRequirement.createMany({
+          data: sampleClauses.map((c) => ({
+            tenderId,
+            sourcePage: c.sourcePage,
+            rawPayload: {
+              title: c.title,
+              description: c.description,
+              category: c.category,
+              mandatory: c.isMandatory,
+              confidence: c.confidence,
+              sourcePage: c.sourcePage,
+            },
+            status: "PENDING",
+          })),
+        });
+      }
     }
+
+    // Set Tender status to IN_REVIEW
+    await prisma.tender.update({
+      where: { id: tenderId },
+      data: { status: "IN_REVIEW" },
+    });
 
     return NextResponse.json({
       success: true,
-      message: "Extraction pipeline processing completed.",
+      message: `Extracted ${parsedClauses.length} clauses from PDF.`,
+      candidateCount: parsedClauses.length,
       tenderId,
       reviewUrl: `/tenders/${tenderId}/review`,
     });
   } catch (error: any) {
-    console.error("Extraction API Error:", error);
+    console.error("Real PDF Extraction API Error:", error);
     return NextResponse.json({ error: error.message || "Extraction failed" }, { status: 500 });
   }
 }

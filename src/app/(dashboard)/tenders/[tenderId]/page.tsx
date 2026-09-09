@@ -1,4 +1,5 @@
 import React from "react";
+import { notFound } from "next/navigation";
 import { fetchTenderWorkspaceData } from "@/features/requirements/services/requirementService";
 import { ComplianceMatrix } from "@/features/requirements/components/ComplianceMatrix";
 
@@ -12,7 +13,13 @@ interface WorkspacePageProps {
 
 export default async function TenderWorkspacePage({ params }: WorkspacePageProps) {
   const { tenderId } = params;
-  const { requirements, teamMembers } = await fetchTenderWorkspaceData(tenderId);
+  const data = await fetchTenderWorkspaceData(tenderId);
+
+  if (!data) {
+    notFound();
+  }
+
+  const { requirements, teamMembers } = data;
 
   return (
     <div className="space-y-6 min-w-0 max-w-full">
