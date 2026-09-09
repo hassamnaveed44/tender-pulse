@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db/prisma";
 import { CreateTenderSchema, CreateTenderInput } from "../types/tenderTypes";
+import { parsePdfRfpDocument } from "@/features/extraction/services/pdfParserService";
 
 export async function createTenderAction(input: CreateTenderInput) {
   const parseResult = CreateTenderSchema.safeParse(input);
@@ -23,18 +24,33 @@ export async function createTenderAction(input: CreateTenderInput) {
       : `TP-2026-${Math.floor(10000 + Math.random() * 90000)}`;
 
   try {
-    // Find or fallback first organization and user
-    const firstOrg = await prisma.organization.findFirst();
-    const firstUser = await prisma.user.findFirst();
+    // Ensure initial User and Organization exist in DB
+    let firstUser = await prisma.user.findFirst();
+    if (!firstUser) {
+      firstUser = await prisma.user.create({
+        data: {
+          clerkUserId: "user_system_admin",
+          email: "admin@tenderpulse.io",
+          fullName: "System Admin",
+        },
+      });
+    }
 
-    if (!firstOrg || !firstUser) {
-      console.warn("No org or user found in DB when creating tender, returning simulated success");
-      return {
-        success: true,
-        tenderId: `tender-${Date.now()}`,
-        referenceNumber: ref,
-        redirectUrl: `/tenders/new`,
-      };
+    let firstOrg = await prisma.organization.findFirst();
+    if (!firstOrg) {
+      firstOrg = await prisma.organization.create({
+        data: {
+          name: "Apex Engineering & Infrastructure",
+          slug: "apex-engineering",
+          createdBy: firstUser.id,
+          members: {
+            create: {
+              userId: firstUser.id,
+              role: "ADMIN",
+            },
+          },
+        },
+      });
     }
 
     const newTender = await prisma.tender.create({
@@ -68,11 +84,10 @@ export async function createTenderAction(input: CreateTenderInput) {
       referenceNumber: newTender.referenceNumber,
     };
   } catch (error: any) {
-    console.warn("Error creating tender in database:", error);
+    console.error("Error creating tender in database:", error);
     return {
-      success: true,
-      tenderId: `tender-${Date.now()}`,
-      referenceNumber: ref,
+      success: false,
+      error: error.message || "Failed to create tender in database.",
     };
   }
 }
@@ -86,37 +101,67 @@ export async function uploadRfpDocumentAction(formData: FormData) {
   }
 
   try {
-    const firstUser = await prisma.user.findFirst();
-
-    if (firstUser) {
-      await prisma.tenderDocument.create({
+    let firstUser = await prisma.user.findFirst();
+    if (!firstUser) {
+      firstUser = await prisma.user.create({
         data: {
-          tenderId,
-          fileType: "RFP",
-          fileName: file.name,
-          storageKey: `rfps/${Date.now()}_${file.name}`,
-          uploadedBy: firstUser.id,
+          clerkUserId: "user_system_admin",
+          email: "admin@tenderpulse.io",
+          fullName: "System Admin",
         },
-      });
-
-      await prisma.tender.update({
-        where: { id: tenderId },
-        data: { status: "EXTRACTING" },
       });
     }
 
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const extractedClauses = await parsePdfRfpDocument(buffer);
+
+    const tenderDoc = await prisma.tenderDocument.create({
+      data: {
+        tenderId,
+        fileType: "RFP",
+        fileName: file.name,
+        storageKey: `rfps/${Date.now()}_${file.name}`,
+        uploadedBy: firstUser.id,
+      },
+    });
+
+    // Insert extracted candidates into ExtractedRequirement staging table
+    for (const clause of extractedClauses) {
+      await prisma.extractedRequirement.create({
+        data: {
+          tenderId,
+          sourceDocumentId: tenderDoc.id,
+          sourcePage: clause.sourcePage,
+          rawPayload: {
+            title: clause.title,
+            description: clause.description,
+            category: clause.category,
+            mandatory: clause.isMandatory,
+            confidence: clause.confidence,
+          },
+          status: "PENDING",
+        },
+      });
+    }
+
+    await prisma.tender.update({
+      where: { id: tenderId },
+      data: { status: "IN_REVIEW" },
+    });
+
     revalidatePath(`/tenders`);
     revalidatePath(`/tenders/${tenderId}`);
+    revalidatePath(`/tenders/${tenderId}/review`);
 
     return {
       success: true,
-      message: `Document '${file.name}' uploaded successfully. Extraction pipeline enqueued.`,
+      message: `Document '${file.name}' uploaded successfully. ${extractedClauses.length} extracted requirement clauses ready for review.`,
     };
-  } catch (error) {
-    console.warn("DB update failed during RFP upload action:", error);
+  } catch (error: any) {
+    console.error("DB update failed during RFP upload action:", error);
     return {
-      success: true,
-      message: `Document '${file.name}' uploaded. Extraction pipeline simulation running.`,
+      success: false,
+      error: error.message || "Failed to process RFP document upload.",
     };
   }
 }
